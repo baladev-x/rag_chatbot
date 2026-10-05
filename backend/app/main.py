@@ -12,7 +12,7 @@ from app.routes.documents import router as documents_router
 
 app = FastAPI(
     title="FileMind AI",
-    description="Multi-format RAG application using Gemini embeddings and Gemini LLM",
+    description="Multi-format RAG document assistant using Gemini embeddings, ChromaDB and Gemini LLM",
     version="1.0.0"
 )
 
