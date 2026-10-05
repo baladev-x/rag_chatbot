@@ -12,15 +12,32 @@ router = APIRouter(
 )
 
 
+# --------------------------------------------------
+# Request model
+# --------------------------------------------------
+
 class ChatRequest(BaseModel):
+
     question: str
+
     top_k: int = 5
 
 
+# --------------------------------------------------
+# Chat endpoint
+# --------------------------------------------------
+
 @router.post("/")
-def chat(request: ChatRequest):
+def chat(
+    request: ChatRequest
+):
 
     question = request.question.strip()
+
+
+    # --------------------------------------------------
+    # Validate question
+    # --------------------------------------------------
 
     if not question:
 
@@ -28,6 +45,7 @@ def chat(request: ChatRequest):
             status_code=400,
             detail="Question cannot be empty"
         )
+
 
     try:
 
@@ -41,14 +59,24 @@ def chat(request: ChatRequest):
 
 
         # --------------------------------------------------
-        # 2. Search ChromaDB with similarity threshold
+        # 2. Search ChromaDB
         # --------------------------------------------------
 
         results = search_documents(
             query_embedding=query_embedding,
-            top_k=request.top_k,
-            distance_threshold=0.8
+            top_k=request.top_k
         )
+
+
+        # --------------------------------------------------
+        # DEBUG
+        # --------------------------------------------------
+
+        print("\n==============================")
+        print("CHAT DEBUG")
+        print("RAW RESULTS:")
+        print(results)
+        print("==============================\n")
 
 
         # --------------------------------------------------
@@ -72,23 +100,24 @@ def chat(request: ChatRequest):
 
 
         # --------------------------------------------------
-        # 4. Check if relevant results exist
+        # 4. Check results
         # --------------------------------------------------
 
         if not documents:
 
             return {
                 "success": False,
+
                 "message": (
-                    "No relevant information found "
-                    "in uploaded documents."
+                    "No documents found in ChromaDB."
                 ),
+
                 "sources": []
             }
 
 
         # --------------------------------------------------
-        # 5. Build context for Gemini
+        # 5. Build context
         # --------------------------------------------------
 
         context_parts = []
@@ -100,15 +129,18 @@ def chat(request: ChatRequest):
 
             metadata = metadatas[index]
 
+
             filename = metadata.get(
                 "filename",
                 "Unknown file"
             )
 
+
             chunk_index = metadata.get(
                 "chunk_index",
                 index
             )
+
 
             page_number = metadata.get(
                 "page_number"
@@ -134,6 +166,10 @@ def chat(request: ChatRequest):
                     f"Chunk: {chunk_index}"
                 )
 
+
+            # ----------------------------------------------
+            # Add chunk to context
+            # ----------------------------------------------
 
             context_parts.append(
                 f"""
@@ -171,31 +207,35 @@ def chat(request: ChatRequest):
         ):
 
             source = {
+
                 "filename": metadata.get(
                     "filename",
                     "Unknown file"
                 ),
+
                 "file_type": metadata.get(
                     "file_type",
                     "Unknown"
                 ),
+
                 "chunk_index": metadata.get(
                     "chunk_index",
                     index
                 ),
+
                 "distance": distances[index]
             }
 
 
             # ----------------------------------------------
-            # Add PDF page number if available
+            # Add PDF page
             # ----------------------------------------------
 
             if "page_number" in metadata:
 
-                source["page_number"] = metadata[
-                    "page_number"
-                ]
+                source["page_number"] = (
+                    metadata["page_number"]
+                )
 
 
             sources.append(
@@ -208,9 +248,13 @@ def chat(request: ChatRequest):
         # --------------------------------------------------
 
         return {
+
             "success": True,
+
             "question": question,
+
             "answer": answer,
+
             "sources": sources
         }
 
@@ -218,6 +262,8 @@ def chat(request: ChatRequest):
     except Exception as e:
 
         raise HTTPException(
+
             status_code=500,
+
             detail=f"Chat failed: {str(e)}"
         )

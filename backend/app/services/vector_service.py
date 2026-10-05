@@ -71,18 +71,13 @@ def add_documents(
     metadatas = []
 
 
-    for index, chunk in enumerate(
-        chunks
-    ):
+    for index, chunk in enumerate(chunks):
 
         # ------------------------------------------
         # Structured chunk
         # ------------------------------------------
 
-        if isinstance(
-            chunk,
-            dict
-        ):
+        if isinstance(chunk, dict):
 
             text = chunk["text"]
 
@@ -109,7 +104,7 @@ def add_documents(
 
 
         # ------------------------------------------
-        # Unique Chroma ID
+        # Unique ChromaDB ID
         # ------------------------------------------
 
         ids.append(
@@ -145,9 +140,7 @@ def add_documents(
 
         if page_number is not None:
 
-            metadata["page_number"] = (
-                page_number
-            )
+            metadata["page_number"] = page_number
 
 
         metadatas.append(
@@ -173,9 +166,9 @@ def add_documents(
 
 def search_documents(
     query_embedding: list[float],
-    top_k: int = 5,
-    distance_threshold: float = 0.8
+    top_k: int = 5
 ):
+
     results = collection.query(
         query_embeddings=[
             query_embedding
@@ -183,47 +176,48 @@ def search_documents(
         n_results=top_k
     )
 
-    if not results["distances"]:
-        return results
 
-    filtered_documents = []
-    filtered_metadatas = []
-    filtered_distances = []
+    # ------------------------------------------
+    # Debug
+    # ------------------------------------------
 
-    documents = results["documents"][0]
-    metadatas = results["metadatas"][0]
-    distances = results["distances"][0]
+    print("\n==============================")
+    print("CHROMA SEARCH")
+    print("==============================")
 
-    for document, metadata, distance in zip(
-        documents,
-        metadatas,
-        distances
-    ):
+    print(
+        "Documents:",
+        results.get("documents")
+    )
 
-        if distance <= distance_threshold:
+    print(
+        "Distances:",
+        results.get("distances")
+    )
 
-            filtered_documents.append(
-                document
-            )
+    print(
+        "Metadatas:",
+        results.get("metadatas")
+    )
 
-            filtered_metadatas.append(
-                metadata
-            )
+    print("==============================\n")
 
-            filtered_distances.append(
-                distance
-            )
 
     return {
-        "documents": [
-            filtered_documents
-        ],
-        "metadatas": [
-            filtered_metadatas
-        ],
-        "distances": [
-            filtered_distances
-        ]
+        "documents": results.get(
+            "documents",
+            [[]]
+        ),
+
+        "metadatas": results.get(
+            "metadatas",
+            [[]]
+        ),
+
+        "distances": results.get(
+            "distances",
+            [[]]
+        )
     }
 
 
@@ -245,28 +239,27 @@ def list_documents():
 
     for metadata in results["metadatas"]:
 
-        file_id = metadata[
-            "file_id"
-        ]
+        file_id = metadata["file_id"]
 
 
         if file_id not in documents:
 
             documents[file_id] = {
                 "file_id": file_id,
+
                 "filename": metadata[
                     "filename"
                 ],
+
                 "file_type": metadata[
                     "file_type"
                 ],
+
                 "chunks": 0
             }
 
 
-        documents[file_id][
-            "chunks"
-        ] += 1
+        documents[file_id]["chunks"] += 1
 
 
     return list(
@@ -289,9 +282,7 @@ def delete_document(
     )
 
 
-    ids = results[
-        "ids"
-    ]
+    ids = results["ids"]
 
 
     if ids:

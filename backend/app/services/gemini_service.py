@@ -5,14 +5,28 @@ from dotenv import load_dotenv
 from google import genai
 
 
+# --------------------------------------------------
+# Environment
+# --------------------------------------------------
+
 load_dotenv()
 
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_API_KEY = os.getenv(
+    "GEMINI_API_KEY"
+)
+
 
 if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY is not configured")
 
+    raise ValueError(
+        "GEMINI_API_KEY is not configured"
+    )
+
+
+# --------------------------------------------------
+# Gemini client
+# --------------------------------------------------
 
 client = genai.Client(
     api_key=GEMINI_API_KEY
@@ -20,6 +34,11 @@ client = genai.Client(
 
 
 GEMINI_MODEL = "gemini-3.5-flash-lite"
+
+
+# --------------------------------------------------
+# Generate answer
+# --------------------------------------------------
 
 def generate_answer(
     question: str,
@@ -50,38 +69,60 @@ User Question:
 Answer clearly and concisely.
 """
 
+
     max_retries = 3
 
-    for attempt in range(max_retries):
+
+    for attempt in range(
+        max_retries
+    ):
 
         try:
 
             response = client.models.generate_content(
+
                 model=GEMINI_MODEL,
+
                 contents=prompt
             )
 
+
             return response.text
+
 
         except Exception as e:
 
             error_message = str(e)
 
-            # Retry only temporary service availability errors
-            if "503" not in error_message and "UNAVAILABLE" not in error_message:
+
+            if (
+                "503" not in error_message
+                and
+                "UNAVAILABLE" not in error_message
+            ):
+
                 raise
 
+
             if attempt == max_retries - 1:
+
                 raise Exception(
+
                     "Gemini service is currently unavailable. "
                     "Please try again later."
                 )
 
+
             wait_time = 2 ** attempt
 
+
             print(
+
                 f"Gemini unavailable. "
                 f"Retrying in {wait_time} seconds..."
             )
 
-            time.sleep(wait_time)
+
+            time.sleep(
+                wait_time
+            )
