@@ -26,7 +26,7 @@ app.add_middleware(
 
     allow_origins=[
     "http://localhost:5173",
-    "https://filemind-ai-frontend.onrender.com"
+    "https://rag-chatbot-frontend-fq16.onrender.com"
 ],
 
     allow_credentials=True,
